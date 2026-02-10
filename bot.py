@@ -144,7 +144,7 @@ async def decision(callback: CallbackQuery):
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
 
         # === ВІДПРАВКА 4 ФОТО ===
-        photos = ["1.jpg", "2.jpg", "3.jpg", "4.jpg"]
+        photos = ["step1.jpg", "step2.jpg", "step3.jpg", "step4.jpg"]
         for photo in photos:
             try:
                 with open(photo, "rb") as f:
@@ -188,6 +188,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

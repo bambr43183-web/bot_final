@@ -10,11 +10,11 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 
 # ================= НАСТРОЙКИ =================
-BOT_TOKEN = os.getenv("8404813322:AAHW1xd6eoo2SduUTAkYJ1dFaEFlXxxgiR0")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID"))  # чат адмінів
 DB_NAME = "users.db"
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=8404813322:AAHW1xd6eoo2SduUTAkYJ1dFaEFlXxxgiR0)
 dp = Dispatcher()
 
 # ================= БАЗА ДАНИХ =================
@@ -159,4 +159,5 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
 

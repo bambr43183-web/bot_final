@@ -128,6 +128,8 @@ async def finish_form(message: Message, state: FSMContext):
     await state.clear()
 
 # ================= CALLBACK =================
+from aiogram.types import InputFile
+
 @dp.callback_query()
 async def decision(callback: CallbackQuery):
     action, form_id = callback.data.split(":")
@@ -141,22 +143,24 @@ async def decision(callback: CallbackQuery):
 
     if action == "accept":
         status = "accepted"
+        # --- Привітання ---
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
 
+        # --- Відправка 4 фото ---
         photos = ["step1.jpg", "step2.jpg", "step3.jpg", "step4.jpg"]
-for photo in photos:
-    try:
-        file = InputFile(photo)  # створюємо InputFile
-        await bot.send_photo(user_id, photo=file)
-    except Exception as e:
-        print(f"Не вдалося надіслати фото {photo}: {e}")
+        for photo_path in photos:
+            try:
+                photo_file = InputFile(photo_path)
+                await bot.send_photo(chat_id=user_id, photo=photo_file)
+            except Exception as e:
+                print(f"Не вдалося надіслати фото {photo_path}: {e}")
 
-        # === ІНСТРУКЦІЯ З КНОПКОЮ ===
+        # --- Інструкція з кнопкою ---
         instruction_text = (
             "📌 Одразу після входу в чат ти зобовʼязаний додати:\n"
             f"1️⃣ Своє ігрове ID: {game_id}\n"
-            f"2️⃣ Звання (свій ID) — окреме повідомлення\n"
-            f"3️⃣ Нік (свій нік без приписок) — окреме повідомлення\n\n"
+            "2️⃣ Звання (свій ID) — окреме повідомлення\n"
+            f"3️⃣ Нік (свій нік без приписок): {nickname} — окреме повідомлення\n\n"
             "Якщо ти не зрозумів де взяти цю інформацію, скористайся кнопкою нижче:"
         )
 
@@ -165,10 +169,11 @@ for photo in photos:
         ])
         await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
 
-        # === ОКРЕМІ SMS для ID та НІКА ===
+        # --- Окремі SMS для ID та Ніка ---
         await bot.send_message(user_id, f"Ваш ID: {game_id}")
         await bot.send_message(user_id, f"Ваш нік: {nickname}")
 
+        # --- Оновлення повідомлення адміну ---
         await callback.message.edit_text(callback.message.text + "\n\n✅ Прийнято")
 
     else:
@@ -176,6 +181,7 @@ for photo in photos:
         await bot.send_message(user_id, "❌ На жаль, вас ВІДХИЛЕНО.")
         await callback.message.edit_text(callback.message.text + "\n\n❌ Відхилено")
 
+    # --- Оновлення статусу в БД ---
     cursor.execute("UPDATE forms SET status=? WHERE id=?", (status, form_id))
     conn.commit()
     await callback.answer()
@@ -187,6 +193,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

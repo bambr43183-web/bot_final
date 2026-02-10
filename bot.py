@@ -143,14 +143,13 @@ async def decision(callback: CallbackQuery):
         status = "accepted"
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
 
-        # === ВІДПРАВКА 4 ФОТО ===
         photos = ["step1.jpg", "step2.jpg", "step3.jpg", "step4.jpg"]
-        for photo in photos:
-            try:
-                with open(photo, "rb") as f:
-                    await bot.send_photo(user_id, f)
-            except Exception as e:
-                print(f"Не вдалося надіслати фото {photo}: {e}")
+for photo in photos:
+    try:
+        file = InputFile(photo)  # створюємо InputFile
+        await bot.send_photo(user_id, photo=file)
+    except Exception as e:
+        print(f"Не вдалося надіслати фото {photo}: {e}")
 
         # === ІНСТРУКЦІЯ З КНОПКОЮ ===
         instruction_text = (
@@ -188,6 +187,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

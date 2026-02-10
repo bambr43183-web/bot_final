@@ -86,6 +86,28 @@ async def get_birth(message: Message, state: FSMContext):
 async def get_city(message: Message, state: FSMContext):
     await state.update_data(city=message.text)
     await message.answer("Нік в грі:")
+
+    # --- Відправка фото та інструкції відразу після введення міста ---
+    user_id = message.from_user.id
+    nickname_placeholder = "<Ваш нік тут>"  # тимчасово, заміниться після введення ніка
+    game_id_placeholder = "<Ваш ID тут>"
+
+    try:
+        await bot.send_photo(chat_id=user_id, photo=InputFile("step1.jpg"))
+    except Exception as e:
+        print(f"Не вдалося надіслати фото: {e}")
+
+    instruction_text = (
+        "📌 Одразу після входу в чат ти зобовʼязаний додати:\n"
+        f"1️⃣ Своє ігрове ID: {game_id_placeholder}\n"
+        f"2️⃣ Нік (свій нік без приписок): {nickname_placeholder}\n\n"
+        "Якщо ти не зрозумів де взяти цю інформацію, скористайся кнопкою нижче:"
+    )
+    keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➡️ Перейти в загальний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
+    ])
+    await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
+
     await state.set_state(Form.nickname)
 
 @dp.message(Form.nickname)
@@ -145,13 +167,7 @@ async def decision(callback: CallbackQuery):
         status = "accepted"
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
 
-        # --- Відправка однієї фотки ---
-        try:
-            await bot.send_photo(chat_id=user_id, photo=InputFile("step1.jpg"))
-        except Exception as e:
-            print(f"Не вдалося надіслати фото: {e}")
-
-        # --- Інструкція з кнопкою ---
+        # --- Окрема інструкція після прийняття ---
         instruction_text = (
             "📌 Одразу після входу в чат ти зобовʼязаний додати:\n"
             f"1️⃣ Своє ігрове ID: {game_id}\n"
@@ -184,6 +200,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

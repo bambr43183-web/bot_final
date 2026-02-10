@@ -1,4 +1,3 @@
-```python
 import asyncio
 import os
 import re
@@ -10,14 +9,14 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 
 # ================= НАСТРОЙКИ =================
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID"))  # чат адмінів
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # Можно вставить токен прямо в кавычках
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", 123456789))  # замените на свой id
 DB_NAME = "users.db"
 
-bot = Bot(token=8404813322:AAHW1xd6eoo2SduUTAkYJ1dFaEFlXxxgiR0)
-dp = Dispatcher()
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot=bot)
 
-# ================= БАЗА ДАНИХ =================
+# ================= БАЗА ДАННЫХ =================
 conn = sqlite3.connect(DB_NAME)
 cursor = conn.cursor()
 cursor.execute("""
@@ -119,12 +118,10 @@ async def finish_form(message: Message, state: FSMContext):
         f"Telegram: @{username}"
     )
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="✅ Прийняти", callback_data=f"accept:{form_id}"),
-            InlineKeyboardButton(text="❌ Відхилити", callback_data=f"reject:{form_id}")
-        ]
-    ])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Прийняти", callback_data=f"accept:{form_id}"),
+        InlineKeyboardButton(text="❌ Відхилити", callback_data=f"reject:{form_id}")
+    ]])
 
     await bot.send_message(ADMIN_CHAT_ID, text, reply_markup=keyboard)
     await message.answer("Анкету надіслано. Очікуйте рішення адміністраторів ⏳")
@@ -134,9 +131,13 @@ async def finish_form(message: Message, state: FSMContext):
 @dp.callback_query()
 async def decision(callback: CallbackQuery):
     action, form_id = callback.data.split(":")
-
     cursor.execute("SELECT tg_id FROM forms WHERE id=?", (form_id,))
-    user_id = cursor.fetchone()[0]
+    result = cursor.fetchone()
+    if not result:
+        await callback.answer("Анкета не знайдена!", show_alert=True)
+        return
+
+    user_id = result[0]
 
     if action == "accept":
         status = "accepted"
@@ -153,11 +154,13 @@ async def decision(callback: CallbackQuery):
 
 # ================= RUN =================
 async def main():
+    print("Бот запущено...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-```
+
+
 
 
 

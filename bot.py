@@ -131,18 +131,47 @@ async def finish_form(message: Message, state: FSMContext):
 @dp.callback_query()
 async def decision(callback: CallbackQuery):
     action, form_id = callback.data.split(":")
-    cursor.execute("SELECT tg_id FROM forms WHERE id=?", (form_id,))
+    cursor.execute("SELECT tg_id, nickname, game_id FROM forms WHERE id=?", (form_id,))
     result = cursor.fetchone()
     if not result:
         await callback.answer("Анкета не знайдена!", show_alert=True)
         return
 
-    user_id = result[0]
+    user_id, nickname, game_id = result
 
     if action == "accept":
         status = "accepted"
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
+
+        # === ВІДПРАВКА 4 ФОТО ===
+        photos = ["step1.jpg", "step2.jpg", "step3.jpg", "step4.jpg"]
+        for photo in photos:
+            try:
+                with open(photo, "rb") as f:
+                    await bot.send_photo(user_id, f)
+            except Exception as e:
+                print(f"Не вдалося надіслати фото {photo}: {e}")
+
+        # === ІНСТРУКЦІЯ З КНОПКОЮ ===
+        instruction_text = (
+            "📌 Одразу після входу в чат ти зобовʼязаний додати:\n"
+            f"1️⃣ Своє ігрове ID: {game_id}\n"
+            f"2️⃣ Звання (свій ID) — окреме повідомлення\n"
+            f"3️⃣ Нік (свій нік без приписок) — окреме повідомлення\n\n"
+            "Якщо ти не зрозумів де взяти цю інформацію, скористайся кнопкою нижче:"
+        )
+
+        keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="➡️ Перейти в загальний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
+        ])
+        await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
+
+        # === ОКРЕМІ SMS для ID та НІКА ===
+        await bot.send_message(user_id, f"Ваш ID: {game_id}")
+        await bot.send_message(user_id, f"Ваш нік: {nickname}")
+
         await callback.message.edit_text(callback.message.text + "\n\n✅ Прийнято")
+
     else:
         status = "rejected"
         await bot.send_message(user_id, "❌ На жаль, вас ВІДХИЛЕНО.")
@@ -159,6 +188,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

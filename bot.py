@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS forms (
     username TEXT,
     status TEXT
 )
-""
+"""
 )
 conn.commit()
 
@@ -159,5 +159,6 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
 
 

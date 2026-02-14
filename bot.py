@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS forms (
     city TEXT,
     nickname TEXT,
     game_id TEXT,
+    clan TEXT,
     username TEXT,
     status TEXT
 )
@@ -43,6 +44,7 @@ class Form(StatesGroup):
     city = State()
     nickname = State()
     game_id = State()
+    clan = State()
 
 # ================= START =================
 @dp.message(Command("start"))
@@ -91,17 +93,45 @@ async def get_city(message: Message, state: FSMContext):
 @dp.message(Form.nickname)
 async def get_nickname(message: Message, state: FSMContext):
     await state.update_data(nickname=message.text)
-    await message.answer("ID в грі:")
+    await message.answer("Ваше ігрове ID:")
     await state.set_state(Form.game_id)
 
 @dp.message(Form.game_id)
-async def finish_form(message: Message, state: FSMContext):
+async def get_game_id(message: Message, state: FSMContext):
+    await state.update_data(game_id=message.text)
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Академ", callback_data="clan:Академ")],
+        [InlineKeyboardButton(text="Основний (18+)", callback_data="clan:Основний (18+)")],
+        [InlineKeyboardButton(text="METRO", callback_data="clan:METRO")],
+        [InlineKeyboardButton(text="ESport`s", callback_data="clan:ESport`s")]
+    ])
+
+    await message.answer("В який саме клан Ви бажаєте вступити?", reply_markup=keyboard)
+    await state.set_state(Form.clan)
+
+@dp.callback_query(Form.clan)
+async def choose_clan(callback: CallbackQuery, state: FSMContext):
+    clan_name = callback.data.split(":")[1]
+    await state.update_data(clan=clan_name)
+
+    # Якщо ESport`s — одразу повідомлення
+    if clan_name == "ESport`s":
+        await callback.message.answer(
+            "Запрошуємо Вас на перевірку!\n\n"
+            "Для того, щоб узгодити дату та час перевірки зв'яжіться з "
+            "Лідером Клану ESport`s @WAZOVSKIJ, "
+            "або його заступником (перевіряючим) @zeVS_045"
+        )
+
     data = await state.get_data()
-    username = message.from_user.username or "немає"
+    username = callback.from_user.username or "немає"
 
     cursor.execute(
-        "INSERT INTO forms (tg_id, name, age, birth, city, nickname, game_id, username, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (message.from_user.id, data['name'], data['age'], data['birth'], data['city'], data['nickname'], message.text, username, "pending")
+        "INSERT INTO forms (tg_id, name, age, birth, city, nickname, game_id, clan, username, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (callback.from_user.id, data['name'], data['age'], data['birth'],
+         data['city'], data['nickname'], data['game_id'],
+         clan_name, username, "pending")
     )
     conn.commit()
 
@@ -114,60 +144,82 @@ async def finish_form(message: Message, state: FSMContext):
         f"Дата народження: {data['birth']}\n"
         f"Місто: {data['city']}\n"
         f"Нік: {data['nickname']}\n"
-        f"ID: {message.text}\n"
+        f"ID: {data['game_id']}\n"
+        f"Клан: {clan_name}\n"
         f"Telegram: @{username}"
     )
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+    keyboard_admin = InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(text="✅ Прийняти", callback_data=f"accept:{form_id}"),
         InlineKeyboardButton(text="❌ Відхилити", callback_data=f"reject:{form_id}")
     ]])
 
-    await bot.send_message(ADMIN_CHAT_ID, text, reply_markup=keyboard)
-    await message.answer("Анкету надіслано. Очікуйте рішення адміністраторів ⏳")
+    await bot.send_message(ADMIN_CHAT_ID, text, reply_markup=keyboard_admin)
+    await callback.message.answer("Анкету надіслано. Очікуйте рішення адміністраторів ⏳")
     await state.clear()
+    await callback.answer()
 
 # ================= CALLBACK =================
 @dp.callback_query()
 async def decision(callback: CallbackQuery):
     action, form_id = callback.data.split(":")
-    cursor.execute("SELECT tg_id, nickname, game_id FROM forms WHERE id=?", (form_id,))
+    cursor.execute("SELECT tg_id, nickname, game_id, clan FROM forms WHERE id=?", (form_id,))
     result = cursor.fetchone()
     if not result:
         await callback.answer("Анкета не знайдена!", show_alert=True)
         return
 
-    user_id, nickname, game_id = result
+    user_id, nickname, game_id, clan = result
 
     if action == "accept":
         status = "accepted"
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
 
-        # === ВІДПРАВКА 4 ФОТО ===
+        # === Фото ===
         photos = ["step1.jpg", "step2.jpg", "step3.jpg", "step4.jpg"]
         for photo in photos:
             try:
                 with open(photo, "rb") as f:
                     await bot.send_photo(user_id, f)
             except Exception as e:
-                print(f"Не вдалося надіслати фото {photo}: {e}")
+                print(f"Помилка фото {photo}: {e}")
 
-        # === ІНСТРУКЦІЯ З КНОПКОЮ ===
+        # === Інструкція ===
         instruction_text = (
             "📌 Одразу після входу в чат ти зобовʼязаний додати:\n"
             f"1️⃣ Своє ігрове ID: {game_id}\n"
-            f"2️⃣ Нік (свій нік без приписок) — окреме повідомлення\n\n"
-            "Якщо ти не зрозумів де взяти цю інформацію, скористайся нижче:\n"
-            "Окремим повідомленням в чаті пишите (+ник та в свій нік)\n"
-            "Окремим повідомленням в чаті пишите (+звание та своє ID)\n"
+            "2️⃣ Нік — окреме повідомлення\n\n"
+            "Окремо в чаті:\n"
+            "+ник (свій нік)\n"
+            "+звание (свій ID)"
         )
 
-        keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="➡️ Перейти в загальний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
-        ])
-        await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
+        # === КНОПКИ ПО КЛАНУ ===
+        if clan == "Академ":
+            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Чат Академ", url="https://t.me/+w7gOGc5vXL83M2Ey")],
+                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
+            ])
 
-        # === ОКРЕМІ SMS для ID та НІКА ===
+        elif clan == "Основний (18+)":
+            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Чат Основний (18+)", url="https://t.me/+ED7Kh0C57QgzMzhi")],
+                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
+            ])
+
+        elif clan == "METRO":
+            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Чат METRO", url="https://t.me/+jMykYXhOiggxNDg8")],
+                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
+            ])
+
+        elif clan == "ESport`s":
+            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Чат ESport`s", url="https://t.me/+5cPx8LzQLhsxYzEy")],
+                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
+            ])
+
+        await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
         await bot.send_message(user_id, f"Ваш ID: {game_id}")
         await bot.send_message(user_id, f"Ваш нік: {nickname}")
 
@@ -189,19 +241,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -101,8 +101,8 @@ async def get_game_id(message: Message, state: FSMContext):
     await state.update_data(game_id=message.text)
 
     requirements_text = (
-        "📌 В який саме клан Ви бажаєте вступити?\n\n"
-        "Ознайомтесь з вимогами:\n\n"
+        "В який саме клан Ви бажаєте вступити ?\n"
+        "Ознайомтесь з вимогами до кожного клану:\n\n"
 
         "『HH』Academy (13+)\n"
         "K/D:\n"
@@ -111,19 +111,19 @@ async def get_game_id(message: Message, state: FSMContext):
 
         "『HH』Team (18+)\n"
         "K/D:\n"
-        "- Для хлопців: 6+ на 100 матчів\n"
-        "- Для дівчат: 4.5+ на 100 матчів\n\n"
+        "- Для хлопців: 6+ на 100матчів\n"
+        "- Для дівчат: 4.5+  на 100матчів\n\n"
 
         "『HH』METRO Team (13+)\n"
         "K/D:\n"
-        "- Для хлопців: 2+\n"
-        "- Для дівчат: 1.5+\n"
-        "Винос: 300k+\n\n"
+        "Для хлопців: 2+\n"
+        "Для дівчат: 1,5+\n"
+        "Винос: 300+k\n\n"
 
         "『HH』ЕSportsTeam (16+)\n"
         "K/D:\n"
-        "- Для дівчат: Classic Game - 8+ | Ultimate Royale - 1.4+\n"
-        "- Для хлопців: Classic Game - 10+ | Ultimate Royale - 1.5+\n\n"
+        "Для дівчат: Classic Game - 8+ | Ultimate Royale - 1.4+\n"
+        "Для хлопців: Classic Game 10+ |  Ultimate Royale -1.5+\n\n"
 
         "⬇️ Оберіть клан:"
     )
@@ -135,7 +135,7 @@ async def get_game_id(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="ESport`s (16+)", callback_data="clan:ESport`s")]
     ])
 
-    await message.answer("В який саме клан Ви бажаєте вступити?", reply_markup=keyboard)
+    await message.answer(requirements_text, reply_markup=keyboard)
     await state.set_state(Form.clan)
 
 @dp.callback_query(Form.clan)
@@ -143,7 +143,6 @@ async def choose_clan(callback: CallbackQuery, state: FSMContext):
     clan_name = callback.data.split(":")[1]
     await state.update_data(clan=clan_name)
 
-    # Якщо ESport`s — одразу повідомлення
     if clan_name == "ESport`s":
         await callback.message.answer(
             "Запрошуємо Вас на перевірку!\n\n"
@@ -202,57 +201,7 @@ async def decision(callback: CallbackQuery):
     if action == "accept":
         status = "accepted"
         await bot.send_message(user_id, "✅ Вітаємо! Вас ПРИЙНЯТО в клан!")
-
-        # === Фото ===
-        photos = ["step1.jpg", "step2.jpg", "step3.jpg", "step4.jpg"]
-        for photo in photos:
-            try:
-                with open(photo, "rb") as f:
-                    await bot.send_photo(user_id, f)
-            except Exception as e:
-                print(f"Помилка фото {photo}: {e}")
-
-        # === Інструкція ===
-        instruction_text = (
-            "📌 Одразу після входу в чат ти зобовʼязаний додати:\n"
-            f"1️⃣ Своє ігрове ID: {game_id}\n"
-            "2️⃣ Нік — окреме повідомлення\n\n"
-            "Окремо в чаті:\n"
-            "+ник (свій нік)\n"
-            "+звание (свій ID)"
-        )
-
-        # === КНОПКИ ПО КЛАНУ ===
-        if clan == "Академ":
-            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Чат Академ", url="https://t.me/+w7gOGc5vXL83M2Ey")],
-                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
-            ])
-
-        elif clan == "Основний (18+)":
-            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Чат Основний (18+)", url="https://t.me/+ED7Kh0C57QgzMzhi")],
-                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
-            ])
-
-        elif clan == "METRO":
-            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Чат METRO", url="https://t.me/+jMykYXhOiggxNDg8")],
-                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
-            ])
-
-        elif clan == "ESport`s":
-            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Чат ESport`s", url="https://t.me/+5cPx8LzQLhsxYzEy")],
-                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
-            ])
-
-        await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
-        await bot.send_message(user_id, f"Ваш ID: {game_id}")
-        await bot.send_message(user_id, f"Ваш нік: {nickname}")
-
         await callback.message.edit_text(callback.message.text + "\n\n✅ Прийнято")
-
     else:
         status = "rejected"
         await bot.send_message(user_id, "❌ На жаль, вас ВІДХИЛЕНО.")
@@ -269,4 +218,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

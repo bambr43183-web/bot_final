@@ -100,11 +100,39 @@ async def get_nickname(message: Message, state: FSMContext):
 async def get_game_id(message: Message, state: FSMContext):
     await state.update_data(game_id=message.text)
 
+    requirements_text = (
+        "📌 В який саме клан Ви бажаєте вступити?\n\n"
+        "Ознайомтесь з вимогами:\n\n"
+
+        "『HH』Academy (13+)\n"
+        "K/D:\n"
+        "- Для хлопців: 4+ на 100 матчів\n"
+        "- Для дівчат: 3+ на 100 матчів\n\n"
+
+        "『HH』Team (18+)\n"
+        "K/D:\n"
+        "- Для хлопців: 6+ на 100 матчів\n"
+        "- Для дівчат: 4.5+ на 100 матчів\n\n"
+
+        "『HH』METRO Team (13+)\n"
+        "K/D:\n"
+        "- Для хлопців: 2+\n"
+        "- Для дівчат: 1.5+\n"
+        "Винос: 300k+\n\n"
+
+        "『HH』ЕSportsTeam (16+)\n"
+        "K/D:\n"
+        "- Для дівчат: Classic Game - 8+ | Ultimate Royale - 1.4+\n"
+        "- Для хлопців: Classic Game - 10+ | Ultimate Royale - 1.5+\n\n"
+
+        "⬇️ Оберіть клан:"
+    )
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Академ", callback_data="clan:Академ")],
+        [InlineKeyboardButton(text="Academy (13+)", callback_data="clan:Академ")],
         [InlineKeyboardButton(text="Основний (18+)", callback_data="clan:Основний (18+)")],
-        [InlineKeyboardButton(text="METRO", callback_data="clan:METRO")],
-        [InlineKeyboardButton(text="ESport`s", callback_data="clan:ESport`s")]
+        [InlineKeyboardButton(text="METRO (13+)", callback_data="clan:METRO")],
+        [InlineKeyboardButton(text="ESport`s (16+)", callback_data="clan:ESport`s")]
     ])
 
     await message.answer("В який саме клан Ви бажаєте вступити?", reply_markup=keyboard)
@@ -241,3 +269,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

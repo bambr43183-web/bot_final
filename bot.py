@@ -1,4 +1,4 @@
-import asyncio
+imp\\\\\\\\\\\\ort asyncio
 import os
 import re
 import sqlite3
@@ -9,8 +9,8 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 
 # ================= НАСТРОЙКИ =================
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Можно вставить токен прямо в кавычках
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", 123456789))  # замените на свой id
+BOT_TOKEN = os.getenv("BOT_TO\\\\\KEN")  # Можно вставить токен прямо в кавычках
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_C\\\\\\\\\\\HAT_ID", 12345\\\\\6789))  # замените на свой id
 DB_NAME = "users.db"
 
 bot = Bot(token=BOT_TOKEN)
@@ -260,6 +260,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

@@ -202,6 +202,15 @@ async def decision(callback: CallbackQuery):
 
     user_id, nickname, game_id, clan = result
 
+    # ===== ХТО НАТИСНУВ КНОПКУ =====
+    admin_username = callback.from_user.username
+    admin_fullname = callback.from_user.full_name
+
+    if admin_username:
+        admin_text = f"@{admin_username}"
+    else:
+        admin_text = admin_fullname
+
     if action == "accept":
         status = "accepted"
 
@@ -242,12 +251,20 @@ async def decision(callback: CallbackQuery):
             ])
 
         await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
-        await callback.message.edit_text(callback.message.text + "\n\n✅ Прийнято")
+
+        # ===== ОНОВЛЮЄМО ПОВІДОМЛЕННЯ В АДМІН-ЧАТІ =====
+        await callback.message.edit_text(
+            callback.message.text + f"\n\n✅ Прийнято адміністратором {admin_text}"
+        )
 
     else:
         status = "rejected"
+
         await bot.send_message(user_id, "❌ На жаль, вас ВІДХИЛЕНО.")
-        await callback.message.edit_text(callback.message.text + "\n\n❌ Відхилено")
+
+        await callback.message.edit_text(
+            callback.message.text + f"\n\n❌ Відхилено адміністратором {admin_text}"
+        )
 
     cursor.execute("UPDATE forms SET status=? WHERE id=?", (status, form_id))
     conn.commit()
@@ -260,6 +277,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

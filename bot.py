@@ -19,6 +19,7 @@ dp = Dispatcher(bot=bot)
 # ================= БАЗА ДАННЫХ =================
 conn = sqlite3.connect(DB_NAME)
 cursor = conn.cursor()
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS forms (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +32,9 @@ CREATE TABLE IF NOT EXISTS forms (
     game_id TEXT,
     clan TEXT,
     username TEXT,
-    status TEXT
+    status TEXT,
+    decided_by TEXT,
+    decision_time TEXT
 )
 """)
 conn.commit()
@@ -50,6 +53,34 @@ class Form(StatesGroup):
 @dp.message(Command("start"))
 async def start(message: Message):
     await message.answer("Привіт!\nНапиши /form щоб заповнити анкету.")
+
+# ================= STATS (ТІЛЬКИ АДМІН-ЧАТ) =================
+@dp.message(Command("stats"))
+async def stats(message: Message):
+    if message.chat.id != ADMIN_CHAT_ID:
+        return
+
+    cursor.execute("SELECT COUNT(*) FROM forms")
+    total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM forms WHERE status='accepted'")
+    accepted = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM forms WHERE status='rejected'")
+    rejected = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM forms WHERE status='pending'")
+    pending = cursor.fetchone()[0]
+
+    text = (
+        "📊 Статистика заявок\n\n"
+        f"Всього: {total}\n"
+        f"✅ Прийнято: {accepted}\n"
+        f"❌ Відхилено: {rejected}\n"
+        f"⏳ Очікують: {pending}"
+    )
+
+    await message.answer(text)
 
 # ================= FORM =================
 @dp.message(Command("form"))
@@ -145,13 +176,11 @@ async def choose_clan(callback: CallbackQuery, state: FSMContext):
     clan_name = callback.data.split(":")[1]
     await state.update_data(clan=clan_name)
 
-    # Якщо ESports — одразу повідомлення про перевірку
     if clan_name == "ESports":
         await callback.message.answer(
             "Запрошуємо Вас на перевірку!\n\n"
-            "Для того, щоб узгодити дату та час перевірки зв'яжіться з "
-            "Лідером Клану ESports @WAZOVSKIJ, "
-            "або його заступником (перевіряючим) @zeVS_045"
+            "Для узгодження часу зв'яжіться з "
+            "@WAZOVSKIJ або @zeVS_045"
         )
 
     data = await state.get_data()
@@ -190,26 +219,31 @@ async def choose_clan(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 # ================= CALLBACK (РІШЕННЯ) =================
-@dp.callback_query()
+@dp.callback_query(F.data.startswith(("accept:", "reject:")))
 async def decision(callback: CallbackQuery):
+
     action, form_id = callback.data.split(":")
-    cursor.execute("SELECT tg_id, nickname, game_id, clan FROM forms WHERE id=?", (form_id,))
+
+    cursor.execute(
+        "SELECT tg_id, nickname, game_id, clan, status FROM forms WHERE id=?",
+        (form_id,)
+    )
     result = cursor.fetchone()
 
     if not result:
         await callback.answer("Анкета не знайдена!", show_alert=True)
         return
 
-    user_id, nickname, game_id, clan = result
+    user_id, nickname, game_id, clan, current_status = result
 
-    # ===== ХТО НАТИСНУВ КНОПКУ =====
+    if current_status != "pending":
+        await callback.answer("Рішення вже прийнято!", show_alert=True)
+        return
+
     admin_username = callback.from_user.username
     admin_fullname = callback.from_user.full_name
-
-    if admin_username:
-        admin_text = f"@{admin_username}"
-    else:
-        admin_text = admin_fullname
+    admin_text = f"@{admin_username}" if admin_username else admin_fullname
+    decision_time = datetime.now().strftime("%d.%m.%Y %H:%M")
 
     if action == "accept":
         status = "accepted"
@@ -225,26 +259,22 @@ async def decision(callback: CallbackQuery):
             "+звание (свій ID)"
         )
 
-        # ===== КНОПКИ ДЛЯ КОЖНОГО КЛАНУ =====
         if clan == "Академ":
             keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Чат Академ", url="https://t.me/+w7gOGc5vXL83M2Ey")],
                 [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
             ])
-
         elif clan == "Основний (18+)":
             keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Чат Основний (18+)", url="https://t.me/+ED7Kh0C57QgzMzhi")],
                 [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
             ])
-
         elif clan == "METRO":
             keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Чат METRO", url="https://t.me/+jMykYXhOiggxNDg8")],
                 [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
             ])
-
-        elif clan == "ESports":
+        else:
             keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Чат ESports", url="https://t.me/+5cPx8LzQLhsxYzEy")],
                 [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
@@ -252,9 +282,9 @@ async def decision(callback: CallbackQuery):
 
         await bot.send_message(user_id, instruction_text, reply_markup=keyboard_chat)
 
-        # ===== ОНОВЛЮЄМО ПОВІДОМЛЕННЯ В АДМІН-ЧАТІ =====
         await callback.message.edit_text(
-            callback.message.text + f"\n\n✅ Прийнято адміністратором {admin_text}"
+            callback.message.text +
+            f"\n\n✅ Прийнято адміністратором {admin_text}\n🕒 {decision_time}"
         )
 
     else:
@@ -263,11 +293,16 @@ async def decision(callback: CallbackQuery):
         await bot.send_message(user_id, "❌ На жаль, вас ВІДХИЛЕНО.")
 
         await callback.message.edit_text(
-            callback.message.text + f"\n\n❌ Відхилено адміністратором {admin_text}"
+            callback.message.text +
+            f"\n\n❌ Відхилено адміністратором {admin_text}\n🕒 {decision_time}"
         )
 
-    cursor.execute("UPDATE forms SET status=? WHERE id=?", (status, form_id))
+    cursor.execute(
+        "UPDATE forms SET status=?, decided_by=?, decision_time=? WHERE id=?",
+        (status, admin_text, decision_time, form_id)
+    )
     conn.commit()
+
     await callback.answer()
 
 # ================= RUN =================
@@ -277,6 +312,8 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
 
 
 

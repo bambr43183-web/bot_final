@@ -141,9 +141,9 @@ async def choose_clan(callback: CallbackQuery, state: FSMContext):
     # Якщо ESports — одразу повідомлення про перевірку
     if clan_name == "ESports":
         await callback.message.answer(
-            "Запрошуємо Вас на перевірку!\n\n"
+            "🔥Запрошуємо Вас на перевірку!\n\n"
             "Для того, щоб узгодити дату та час перевірки зв'яжіться з "
-            "Лідером Клану ESports @WAZOVSKIJ, "
+            "Лідером Клану ESports - @WAZOVSKIJ "
         )
 
     data = await state.get_data()

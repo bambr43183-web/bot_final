@@ -115,12 +115,6 @@ async def get_game_id(message: Message, state: FSMContext):
         "- Для хлопців: 6+ на 100матчів\n"
         "- Для дівчат: 4.5+ на 100матчів\n\n"
 
-        "『HH』METRO Team (13+)\n"
-        "K/D:\n"
-        "Для хлопців: 2+\n"
-        "Для дівчат: 1,5+\n"
-        "Винос: 300+k\n\n"
-
         "『HH』ЕSportsTeam (16+)\n"
         "K/D:\n"
         "Для дівчат: Classic Game - 8+ | Ultimate Royale - 1.4+\n"
@@ -132,7 +126,6 @@ async def get_game_id(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="1️⃣ Аcademy (13+)", callback_data="clan:Академ")],
         [InlineKeyboardButton(text="2️⃣ Основний (18+)", callback_data="clan:Основний (18+)")],
-        [InlineKeyboardButton(text="3️⃣ METRO Team (13+)", callback_data="clan:METRO")],
         [InlineKeyboardButton(text="4️⃣ ESport`s Team (16+)", callback_data="clan:ESports")]
     ])
 
@@ -237,13 +230,7 @@ async def decision(callback: CallbackQuery):
                 [InlineKeyboardButton(text="Чат Основний (18+)", url="https://t.me/+ED7Kh0C57QgzMzhi")],
                 [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
             ])
-
-        elif clan == "METRO":
-            keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Чат METRO", url="https://t.me/+jMykYXhOiggxNDg8")],
-                [InlineKeyboardButton(text="Спільний чат", url="https://t.me/+0aldXdWy3EZiMWEy")]
-            ])
-
+    
         elif clan == "ESports":
             keyboard_chat = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Чат ESports", url="https://t.me/+5cPx8LzQLhsxYzEy")],

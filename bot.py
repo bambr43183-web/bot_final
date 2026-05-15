@@ -126,7 +126,7 @@ async def get_game_id(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="1️⃣ Аcademy (13+)", callback_data="clan:Академ")],
         [InlineKeyboardButton(text="2️⃣ Основний (18+)", callback_data="clan:Основний (18+)")],
-        [InlineKeyboardButton(text="4️⃣ ESport`s Team (16+)", callback_data="clan:ESports")]
+        [InlineKeyboardButton(text="3️⃣ ESport`s Team (16+)", callback_data="clan:ESports")]
     ])
 
     await message.answer(text, reply_markup=keyboard)
@@ -144,7 +144,6 @@ async def choose_clan(callback: CallbackQuery, state: FSMContext):
             "Запрошуємо Вас на перевірку!\n\n"
             "Для того, щоб узгодити дату та час перевірки зв'яжіться з "
             "Лідером Клану ESports @WAZOVSKIJ, "
-            "або його заступником (перевіряючим) @zeVS_045"
         )
 
     data = await state.get_data()
